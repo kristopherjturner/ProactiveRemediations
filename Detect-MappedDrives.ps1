@@ -1,4 +1,4 @@
-$ShareName = "DMS"
+$ShareName = "Documentation"
 $StorageAccount = "pnwfs10fileshare"
 
 
