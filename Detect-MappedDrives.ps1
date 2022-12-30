@@ -11,17 +11,12 @@
 
 #>
 
-$ShareName = "audittestomid"
-$DriveLabel = "Audit Test"
-$StorageAccount = "pnwfs10fileshare"
+$ShareName = "azurefileharename"
+$StorageAccount = "storageaccount"
 
 $Date = Get-Date -UFormat "%Y-%m-%d_%H-%m-%S"
 $LogFileName = "DriveMapping-" + "Detect-" + $ShareName + "-" + $date + ".log"
 Start-Transcript -Path $(Join-Path $env:temp $LogFileName)
-
-Write-Host ("Share Name:")$ShareName
-Write-Host ("Drive Label:")$DriveLabel
-Write-Host ("Storage Account:")$StorageAccount
 
 try {
 	$Path = "\\$StorageAccount.file.core.windows.net\$ShareName"
