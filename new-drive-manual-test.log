@@ -1,0 +1,24 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20221230134842
+Username: COOPERSERVICES\kristopher.turner
+RunAs User: COOPERSERVICES\kristopher.turner
+Configuration Name: 
+Machine: INVOKE-TEST (Microsoft Windows NT 10.0.22621.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+Process ID: 14260
+PSVersion: 5.1.22621.963
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.22621.963
+BuildVersion: 10.0.22621.963
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\Users\KRISTO~1.TUR\AppData\Local\Temp\DriveMapping-Detect-Documentation-2022-12-30_13-12-42.log
+Drive is not mapped
+**********************
+Windows PowerShell transcript end
+End time: 20221230134842
+**********************
