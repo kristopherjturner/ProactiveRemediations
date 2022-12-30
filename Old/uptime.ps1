@@ -1,5 +1,5 @@
 $Uptime= get-computerinfo | Select-Object OSUptime 
-if ($Uptime.OsUptime.Days -ge 7){
+if ($Uptime.OsUptime.Days -le 7){
     Write-Output "Device has not rebootet on $($Uptime.OsUptime.Days) days, notify user to reboot"
     Exit 1
 }else {
