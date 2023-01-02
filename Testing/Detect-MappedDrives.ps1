@@ -27,14 +27,20 @@ $RegistryKey
 $connectTestResult = Test-NetConnection -ComputerName "$storageaccount.file.core.windows.net" -Port 445
 $connectTestResult.TcpTestSucceeded
 
-# For troubleshooting
+$Path = "\\$StorageAccount.file.core.windows.net\$ShareName"
+
 
 try {
-	if (-NOT (Test-Path -LiteralPath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\MountPoints2\##$storageaccount.file.core.windows.net#$sharename")) { Exit 1 }
-	if ($connectTestResult.TcpTestSucceeded) {
-		# Continue With script
-		Write-Host ("Connection to storage account via 443 succesful. Script will continue.")
+	if ((Get-ItemPropertyValue -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name 'EnableLinkedConnections' -ea SilentlyContinue) -eq 1) {  } else { Exit 1 }
+	if (Get-PSDrive | Where-Object { $_.DisplayRoot -eq $path }) { 
+		Write-Host "Drive is Mapped"
+		Exit 0
 	}
+ Else { Exit 1 }
+	if ($connectTestResult.TcpTestSucceeded) { 
+		Write-Host "Connection to storage account via 443 succesful. Script will continue." 
+		Exit 0
+	} 
 	else {
 		Write-Error -Message "Unable to reach the Azure storage account via port 445. Check to make sure your organization or ISP is not blocking port 445, or use Azure P2S VPN, Azure S2S VPN, or Express Route to tunnel SMB traffic over a different port."
 		Exit 1
