@@ -4,3 +4,7 @@ try {
 }
 catch { return $false }
 return $true
+
+
+# https://reg2ps.azurewebsites.net/
+# https://www.fmsinc.com/microsoftaccess/developer/mapped_drives_not_available.htm
