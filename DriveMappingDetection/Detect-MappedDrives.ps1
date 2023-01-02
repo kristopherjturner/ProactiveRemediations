@@ -11,8 +11,8 @@
 
 #>
 
-$ShareName = "audittestomid"
-$StorageAccount = "pnwfs10fileshare"
+$ShareName = "" # - Azure File Share
+$StorageAccount = "" # - Storage Account
 
 
 $Date = Get-Date -UFormat "%Y-%m-%d_%H-%m-%S"
