@@ -11,8 +11,8 @@
 
 #>
 
-$ShareName = "DMS" # - Azure File Share
-$StorageAccount = "pnwfs10fileshare" # - Storage Account
+$ShareName = "" # - Azure File Share
+$StorageAccount = "" # - Storage Account
 
 
 $Date = Get-Date -UFormat "%Y-%m-%d_%H-%m-%S"
