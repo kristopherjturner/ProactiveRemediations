@@ -10,7 +10,7 @@
 #>
 
 $ShareName = "" # - Azure File Name
-$DriveLabel = "" # - Drive Label
+$DriveLabel = " Test" # - Drive Label
 $StorageAccount = "" # - Storage Account
 
 $Date = Get-Date -UFormat "%Y-%m-%d_%H-%m-%S"
@@ -43,13 +43,13 @@ else {
 $connectTestResult = Test-NetConnection -ComputerName "$storageaccount.file.core.windows.net" -Port 445
 if ($connectTestResult.TcpTestSucceeded) {
     Write-Host ("Connection to storage account via 443 succesful. Script will continue.")
-
-    else {
-        Write-Error -Message "Unable to reach the Azure storage account via port 445. Check to make sure your organization or ISP is not blocking port 445, or use Azure P2S VPN, Azure S2S VPN, or Express Route to tunnel SMB traffic over a different port."
-        Write-Host ("Skipping drive creation due to connectivity.")
-        Exit
-    }
 }
+else {
+    Write-Error -Message "Unable to reach the Azure storage account via port 445. Check to make sure your organization or ISP is not blocking port 445, or use Azure P2S VPN, Azure S2S VPN, or Express Route to tunnel SMB traffic over a different port."
+    Write-Host ("Skipping drive creation due to connectivity.")
+    Exit
+}
+
 
 
 if (-not (Test-RunningAsSystem)) {
@@ -97,27 +97,37 @@ if (-not (Test-RunningAsSystem)) {
             Exit 1
         }
     }
-}
 
-# Remove unassigned drives
-if ($removeStaleDrives -and $null -ne $psDrives) {
-    $diff = Compare-Object -ReferenceObject $driveMappingConfig -DifferenceObject $psDrives -Property "DriveLetter" -PassThru | Where-Object { $_.SideIndicator -eq "=>" }
-    foreach ($unassignedDrive in $diff) {
-        Write-Warning "Drive '$($unassignedDrive.DriveLetter)' has not been assigned - removing it..."
-        Remove-SmbMapping -LocalPath "$($unassignedDrive.DriveLetter):" -Force -UpdateProfile
+
+    # Remove unassigned drives
+    if ($removeStaleDrives -and $null -ne $psDrives) {
+        $diff = Compare-Object -ReferenceObject $driveMappingConfig -DifferenceObject $psDrives -Property "DriveLetter" -PassThru | Where-Object { $_.SideIndicator -eq "=>" }
+        foreach ($unassignedDrive in $diff) {
+            Write-Warning "Drive '$($unassignedDrive.DriveLetter)' has not been assigned - removing it..."
+            Remove-SmbMapping -LocalPath "$($unassignedDrive.DriveLetter):" -Force -UpdateProfile
+        }
     }
+
+    # Fix to ensure drives are mapped as persistent!
+    $null = Get-ChildItem -Path HKCU:\Network -ErrorAction SilentlyContinue | ForEach-Object { New-ItemProperty -Name ConnectionType -Value 1 -Path $_.PSPath -Force -ErrorAction SilentlyContinue }
 }
-
-# Fix to ensure drives are mapped as persistent!
-$null = Get-ChildItem -Path HKCU:\Network -ErrorAction SilentlyContinue | ForEach-Object { New-ItemProperty -Name ConnectionType -Value 1 -Path $_.PSPath -Force -ErrorAction SilentlyContinue }
-
 Stop-Transcript
 
+
+
+###########################################################################################
+# Done
+###########################################################################################
+
+#!SCHTASKCOMESHERE!#
+
+###########################################################################################
+# If this script is running under system (IME) scheduled task is created  (recurring)
+###########################################################################################
 
 if (Test-RunningAsSystem) {
 
     $LogFileName = "IntuneDriveMappingScheduledTask-" + $ShareName + $date + ".log"
-
     Start-Transcript -Path $(Join-Path -Path $env:temp -ChildPath "$LogFileName")
     Write-Output "Running as System --> creating scheduled task which will run on user logon"
 
@@ -147,20 +157,20 @@ if (Test-RunningAsSystem) {
     ###########################################################################################
 
     $vbsDummyScript = "
-Dim shell,fso,file
+	Dim shell,fso,file
 
-Set shell=CreateObject(`"WScript.Shell`")
-Set fso=CreateObject(`"Scripting.FileSystemObject`")
+	Set shell=CreateObject(`"WScript.Shell`")
+	Set fso=CreateObject(`"Scripting.FileSystemObject`")
 
-strPath=WScript.Arguments.Item(0)
+	strPath=WScript.Arguments.Item(0)
 
-If fso.FileExists(strPath) Then
-    set file=fso.GetFile(strPath)
-    strCMD=`"powershell -nologo -executionpolicy ByPass -command `" & Chr(34) & `"&{`" &_
-    file.ShortPath & `"}`" & Chr(34)
-    shell.Run strCMD,0
-End If
-"
+	If fso.FileExists(strPath) Then
+		set file=fso.GetFile(strPath)
+		strCMD=`"powershell -nologo -executionpolicy ByPass -command `" & Chr(34) & `"&{`" &_
+		file.ShortPath & `"}`" & Chr(34)
+		shell.Run strCMD,0
+	End If
+	"
 
     $scriptSavePathName = "IntuneDriveMapping-VBSHelper.vbs"
 
@@ -179,7 +189,7 @@ End If
 
     $trigger = New-ScheduledTaskTrigger -AtLogOn
 
-    $class = get-cimclass MSFT_TaskEventTrigger root/Microsoft/Windows/TaskScheduler
+    $class = Get-CimClass MSFT_TaskEventTrigger root/Microsoft/Windows/TaskScheduler
     $trigger2 = $class | New-CimInstance -ClientOnly
     $trigger2.Enabled = $True
     $trigger2.Subscription = '<QueryList><Query Id="0" Path="Microsoft-Windows-NetworkProfile/Operational"><Select Path="Microsoft-Windows-NetworkProfile/Operational">*[System[Provider[@Name=''Microsoft-Windows-NetworkProfile''] and EventID=10002]]</Select></Query></QueryList>'
@@ -200,5 +210,8 @@ End If
 
     Start-ScheduledTask -TaskName $schtaskName
     stop-Transcript
-
 }
+
+###########################################################################################
+# Done
+###########################################################################################
