@@ -19,11 +19,6 @@ $Date = Get-Date -UFormat "%Y-%m-%d_%H-%m-%S"
 $LogFileName = "DriveMapping-" + "Detect-" + $ShareName + "-" + $date + ".log"
 Start-Transcript -Path $(Join-Path $env:temp $LogFileName)
 
-$RegistryKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\MountPoints2\##$storageaccount.file.core.windows.net#$sharename"
-
-Write-Host "Looking to see if registry key exist."
-$RegistryKey
-
 $connectTestResult = Test-NetConnection -ComputerName "$storageaccount.file.core.windows.net" -Port 445
 $Path = "\\$StorageAccount.file.core.windows.net\$ShareName"
 
