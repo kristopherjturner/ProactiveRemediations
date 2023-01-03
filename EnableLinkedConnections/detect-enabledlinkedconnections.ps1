@@ -13,10 +13,20 @@ $Date = Get-Date -UFormat "%Y-%m-%d_%H-%m-%S"
 $LogFileName = "Detect-" + "EnableLinkedConnections-" + $date + ".log"
 Start-Transcript -Path $(Join-Path $env:temp $LogFileName)
 
+$Path = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
+$Name = "EnableLinkedConnections"
+$Value = "1"
+
 
 try {
-	if (-NOT (Test-Path -LiteralPath "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System")) { Exit 1 }
-	if ((Get-ItemPropertyValue -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name 'EnableLinkedConnections' -ea SilentlyContinue) -eq 0) {  } else { Exit 1 }
+	$Registry = Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop | Select-Object -ExpandProperty $Name
+	If ($Registry -eq $Value) {
+		Write-Out "Compliant"
+		Exit 0
+	}
+	Write-Warning "Not Compliant"
+	Exit 1
+
 }
 catch { 
 	Write-Warning "Not Compliant"
