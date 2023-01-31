@@ -10,7 +10,7 @@
 #>
 
 $ShareName = "" # - Azure File Name
-$DriveLabel = " Test" # - Drive Label
+$DriveLabel = "" # - Drive Label
 $StorageAccount = "" # - Storage Account
 
 $Date = Get-Date -UFormat "%Y-%m-%d_%H-%m-%S"
@@ -112,106 +112,3 @@ if (-not (Test-RunningAsSystem)) {
     $null = Get-ChildItem -Path HKCU:\Network -ErrorAction SilentlyContinue | ForEach-Object { New-ItemProperty -Name ConnectionType -Value 1 -Path $_.PSPath -Force -ErrorAction SilentlyContinue }
 }
 Stop-Transcript
-
-
-
-###########################################################################################
-# Done
-###########################################################################################
-
-#!SCHTASKCOMESHERE!#
-
-###########################################################################################
-# If this script is running under system (IME) scheduled task is created  (recurring)
-###########################################################################################
-
-if (Test-RunningAsSystem) {
-
-    $LogFileName = "IntuneDriveMappingScheduledTask-" + $ShareName + $date + ".log"
-    Start-Transcript -Path $(Join-Path -Path $env:temp -ChildPath "$LogFileName")
-    Write-Output "Running as System --> creating scheduled task which will run on user logon"
-
-    ###########################################################################################
-    # Get the current script path and content and save it to the client
-    ###########################################################################################
-
-    $currentScript = Get-Content -Path $($PSCommandPath)
-
-    $schtaskScript = $currentScript[(0) .. ($currentScript.IndexOf("#!SCHTASKCOMESHERE!#") - 1)]
-
-    $scriptSavePath = $(Join-Path -Path $env:ProgramData -ChildPath "intune-drive-mapping-generator")
-
-    if (-not (Test-Path $scriptSavePath)) {
-
-        New-Item -ItemType Directory -Path $scriptSavePath -Force
-    }
-
-    $scriptSavePathName = "DriveMapping-$ShareName.ps1"
-
-    $scriptPath = $(Join-Path -Path $scriptSavePath -ChildPath $scriptSavePathName)
-
-    $schtaskScript | Out-File -FilePath $scriptPath -Force
-
-    ###########################################################################################
-    # Create dummy vbscript to hide PowerShell Window popping up at logon
-    ###########################################################################################
-
-    $vbsDummyScript = "
-	Dim shell,fso,file
-
-	Set shell=CreateObject(`"WScript.Shell`")
-	Set fso=CreateObject(`"Scripting.FileSystemObject`")
-
-	strPath=WScript.Arguments.Item(0)
-
-	If fso.FileExists(strPath) Then
-		set file=fso.GetFile(strPath)
-		strCMD=`"powershell -nologo -executionpolicy ByPass -command `" & Chr(34) & `"&{`" &_
-		file.ShortPath & `"}`" & Chr(34)
-		shell.Run strCMD,0
-	End If
-	"
-
-    $scriptSavePathName = "IntuneDriveMapping-VBSHelper.vbs"
-
-    $dummyScriptPath = $(Join-Path -Path $scriptSavePath -ChildPath $scriptSavePathName)
-
-    $vbsDummyScript | Out-File -FilePath $dummyScriptPath -Force
-
-    $wscriptPath = Join-Path $env:SystemRoot -ChildPath "System32\wscript.exe"
-
-    ###########################################################################################
-    # Register a scheduled task to run for all users and execute the script on logon
-    ###########################################################################################
-
-    $schtaskName = "IntuneDriveMapping-$sharename"
-    $schtaskDescription = "Map network drive $sharename."
-
-    $trigger = New-ScheduledTaskTrigger -AtLogOn
-
-    $class = Get-CimClass MSFT_TaskEventTrigger root/Microsoft/Windows/TaskScheduler
-    $trigger2 = $class | New-CimInstance -ClientOnly
-    $trigger2.Enabled = $True
-    $trigger2.Subscription = '<QueryList><Query Id="0" Path="Microsoft-Windows-NetworkProfile/Operational"><Select Path="Microsoft-Windows-NetworkProfile/Operational">*[System[Provider[@Name=''Microsoft-Windows-NetworkProfile''] and EventID=10002]]</Select></Query></QueryList>'
-
-    $trigger3 = $class | New-CimInstance -ClientOnly
-    $trigger3.Enabled = $True
-    $trigger3.Subscription = '<QueryList><Query Id="0" Path="Microsoft-Windows-NetworkProfile/Operational"><Select Path="Microsoft-Windows-NetworkProfile/Operational">*[System[Provider[@Name=''Microsoft-Windows-NetworkProfile''] and EventID=4004]]</Select></Query></QueryList>'
-
-    #Execute task in users context
-    $principal = New-ScheduledTaskPrincipal -GroupId "S-1-5-32-545" -Id "Author"
-
-    #call the vbscript helper and pass the PosH script as argument
-    $action = New-ScheduledTaskAction -Execute $wscriptPath -Argument "`"$dummyScriptPath`" `"$scriptPath`""
-
-    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
-
-    $null = Register-ScheduledTask -TaskName $schtaskName -Trigger $trigger, $trigger2, $trigger3 -Action $action  -Principal $principal -Settings $settings -Description $schtaskDescription -Force
-
-    Start-ScheduledTask -TaskName $schtaskName
-    stop-Transcript
-}
-
-###########################################################################################
-# Done
-###########################################################################################
