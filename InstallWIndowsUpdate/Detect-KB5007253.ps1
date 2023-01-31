@@ -11,6 +11,7 @@ $Date = Get-Date -UFormat "%Y-%m-%d_%H-%m-%S"
 $LogFileName = "Detect-" + "WindowsUpdate-KB5007253-" + $date + ".log"
 Start-Transcript -Path $(Join-Path $env:temp $LogFileName)
 
+$update = Get-Hotfix -Id KB5007253
 try {
     if ($update -eq $null) {
         # Install the update
