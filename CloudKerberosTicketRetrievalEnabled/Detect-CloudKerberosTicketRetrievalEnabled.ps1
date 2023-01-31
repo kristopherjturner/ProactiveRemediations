@@ -6,7 +6,6 @@
 
 .NOTES
 	Author and Edited: Kristopher Turner (InvokeLLC)
-	Make sure to change change variables!!!
 #>
 
 

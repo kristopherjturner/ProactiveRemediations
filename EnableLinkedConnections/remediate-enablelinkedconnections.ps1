@@ -5,7 +5,6 @@
 
 .NOTES
 	Author and Edited: Kristopher Turner (InvokeLLC)
-	
 #>
 
 
